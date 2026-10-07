@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N.E.X.U.S. - Base de données classifiée</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <script type="module" src="js/loader.js"></script>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="brand-block">
+                <h1>N.E.X.U.S.</h1>
+            </div>
+
+            <nav id="main-nav" aria-label="Navigation principale">
+                <a href="#/" data-link class="active">Accueil</a>
+                <a href="#/heroes" data-link>Super-Héros</a>
+                <a href="#/favorites" data-link>Favoris</a>
+            </nav>
+
+            <div id="search-container">
+                <input type="text" id="search-input" placeholder="Rechercher un super-héros (ex: Superman, Iron Man)..." aria-label="Rechercher un super-héros">
+            </div>
+        </div>
+    </header>
+
+    <main id="app">
+        <div class="home-section">
+            
+            <div class="home-hero terminal-screen">
+                <div class="sys-status">
+                    <span>[ SYS.OP : ONLINE ]</span>
+                    <span>ACCRÉDITATION : NIVEAU 7</span>
+                    <span>RÉSEAU : SÉCURISÉ</span>
+                    <span>NODE : ORLÉANS_FR</span>
+                </div>
+
+                <h2>
+                    <span class="typing-text">ACCÈS AUTORISÉ : N.E.X.U.S.</span><span class="cursor"></span>
+                </h2>
+                <p class="tagline">Base de données globale des entités métahumaines et agents d'élite.</p>
+
+                <div class="terminal-logs">
+                    <p>> Initialisation du protocole de sécurité... <span class="text-ok">[OK]</span></p>
+                    <p>> Décryptage des dossiers classifiés... <span class="text-ok">[OK]</span></p>
+                    <p>> Connexion au réseau satellite tactique... <span class="text-ok">[ÉTABLIE]</span></p>
+                    <p class="blink-text">> En attente de commande opérateur_</p>
+                </div>
+
+                <div class="home-actions">
+                    <a href="#/heroes" class="btn btn-primary">[ INITIALISER LA RECHERCHE ]</a>
+                </div>
+            </div>
+
+        </div>
+        </main>
+
+    <footer>
+    </footer>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
