@@ -13,9 +13,10 @@ const CONFIG = {
         baseUrl: 'https://www.superheroapi.com/api.php',
         apiKey: '7bea7e85f7979785a2773ca78db33d53',
         maxHeroId: 731,
-        requestBatchSize: 4,
-        requestRetries: 3,
-        cacheVersion: 2
+        requestBatchSize: 2,
+        requestRetries: 5,
+        requestDelay: 300,
+        cacheVersion: 3
     },
     
     storage: {
@@ -43,6 +44,7 @@ class HeroProvider {
     static ratingsKey = 'hero_ratings';
     static favoritesKey = 'hero_favorites';
     static favorites = HeroProvider.loadFavorites();
+    static loadingPromise = null;
 
     static loadFromCache() {
         try {
@@ -76,12 +78,28 @@ class HeroProvider {
     }
 
     static async loadHeroes() {
+        if (HeroProvider.loadingPromise) {
+            return HeroProvider.loadingPromise;
+        }
+
+        HeroProvider.loadingPromise = HeroProvider.loadHeroesOnce();
+        try {
+            return await HeroProvider.loadingPromise;
+        } finally {
+            HeroProvider.loadingPromise = null;
+        }
+    }
+
+    static async loadHeroesOnce() {
         let apiHeroes = HeroProvider.loadFromCache();
 
         if (apiHeroes === null) {
             apiHeroes = await HeroProvider.fetchAllApiHeroes();
-            if (apiHeroes && apiHeroes.length > 0) {
+            const expectedHeroCount = config.api.maxHeroId || 731;
+            if (apiHeroes && apiHeroes.length >= expectedHeroCount * 0.9) {
                 HeroProvider.saveToCache(apiHeroes);
+            } else if (apiHeroes) {
+                console.warn(`Chargement incomplet: ${apiHeroes.length}/${expectedHeroCount} super-héros`);
             }
         }
 
@@ -104,6 +122,11 @@ class HeroProvider {
             batch.forEach(hero => {
                 if (hero) heroes.push(hero);
             });
+            if (end < maxHeroId) {
+                await new Promise(resolve => {
+                    setTimeout(resolve, config.api.requestDelay || 300);
+                });
+            }
         }
 
         return heroes;
@@ -115,12 +138,16 @@ class HeroProvider {
                 const response = await fetch(`${HeroProvider.baseUrl}/${HeroProvider.apiKey}/${id}`);
                 if (response.ok) {
                     const apiHero = await response.json();
-                    if (!apiHero || apiHero.response !== 'success') return null;
+                    if (apiHero?.response === 'success') {
+                        return HeroProvider.normalizeHero(apiHero);
+                    }
 
-                    return HeroProvider.normalizeHero(apiHero);
+                    if (attempt === retries) return null;
                 }
 
-                if (response.status < 500 && response.status !== 429) return null;
+                if (!response.ok && response.status < 500 && response.status !== 429) {
+                    return null;
+                }
             } catch (error) {
                 if (attempt === retries) return null;
             }
