@@ -1,6 +1,6 @@
 import HeroProvider from '../../services/HeroProvider.js';
 import Utils from '../../services/Utils.js';
-import imageLoader from '../../services/ImageLoader.js';
+import imageLoader, { getImageUrl } from '../../services/ImageLoader.js';
 
 class HeroesList {
     constructor(page = 1, publisher = null) {
@@ -104,10 +104,10 @@ class HeroesList {
                 <article class="hero-card" data-hero-id="${hero.id}">
                     <div class="hero-card-image">
                         <img 
-                            src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             alt="${hero.name}"
                             class="lazy-load"
-                            data-src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             loading="lazy"
                         >
                         <button class="favorite-btn ${isFav ? 'active' : ''}" 

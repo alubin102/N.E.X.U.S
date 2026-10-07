@@ -1,3 +1,11 @@
+export function getImageUrl(url) {
+    if (!url || !url.startsWith('https://www.superherodb.com/')) {
+        return url;
+    }
+
+    return `/api/image?url=${encodeURIComponent(url)}`;
+}
+
 class ImageLoader {
     constructor(options = {}) {
         this.options = {
@@ -25,14 +33,15 @@ class ImageLoader {
     }
 
     loadImage(img) {
-        const src = img.dataset.src || img.getAttribute('data-src');
+        const originalSrc = img.dataset.src || img.getAttribute('data-src');
         const srcset = img.dataset.srcset || img.getAttribute('data-srcset');
 
-        if (!src) {
+        if (!originalSrc) {
             this.observer.unobserve(img);
             return;
         }
 
+        const src = getImageUrl(originalSrc);
         img.classList.add('lazy-loading');
 
         const tempImg = new Image();

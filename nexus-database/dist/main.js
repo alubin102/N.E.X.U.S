@@ -349,6 +349,14 @@ const Utils = {
 /* harmony default export */ const services_Utils = (Utils);
 
 ;// ./js/services/ImageLoader.js
+function getImageUrl(url) {
+    if (!url || !url.startsWith('https://www.superherodb.com/')) {
+        return url;
+    }
+
+    return `/api/image?url=${encodeURIComponent(url)}`;
+}
+
 class ImageLoader {
     constructor(options = {}) {
         this.options = {
@@ -376,14 +384,15 @@ class ImageLoader {
     }
 
     loadImage(img) {
-        const src = img.dataset.src || img.getAttribute('data-src');
+        const originalSrc = img.dataset.src || img.getAttribute('data-src');
         const srcset = img.dataset.srcset || img.getAttribute('data-srcset');
 
-        if (!src) {
+        if (!originalSrc) {
             this.observer.unobserve(img);
             return;
         }
 
+        const src = getImageUrl(originalSrc);
         img.classList.add('lazy-loading');
 
         const tempImg = new Image();
@@ -598,10 +607,10 @@ class HeroesList {
                 <article class="hero-card" data-hero-id="${hero.id}">
                     <div class="hero-card-image">
                         <img 
-                            src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             alt="${hero.name}"
                             class="lazy-load"
-                            data-src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             loading="lazy"
                         >
                         <button class="favorite-btn ${isFav ? 'active' : ''}" 
@@ -782,7 +791,7 @@ class HeroDetail {
                 <div class="hero-detail-container">
                     <div class="hero-detail-image">
                         <img 
-                            src="${this.hero.image || 'https://via.placeholder.com/400x500?text=No+Image'}"
+                            src="${getImageUrl(this.hero.image) || 'https://via.placeholder.com/400x500?text=No+Image'}"
                             alt="${this.hero.name}"
                             class="hero-main-image"
                             loading="lazy"
@@ -1123,10 +1132,10 @@ class Favorites {
                 <article class="hero-card" data-hero-id="${hero.id}">
                     <div class="hero-card-image">
                         <img 
-                            src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             alt="${hero.name}"
                             class="lazy-load"
-                            data-src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                            data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             loading="lazy"
                         >
                         <button class="favorite-btn active" 
@@ -1375,10 +1384,10 @@ function displaySearchResults(results, query) {
             <article class="hero-card" data-hero-id="${hero.id}">
                 <div class="hero-card-image">
                     <img 
-                        src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                        src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                         alt="${hero.name}"
                         class="lazy-load"
-                        data-src="${hero.image || 'https://via.placeholder.com/300x400?text=No+Image'}"
+                        data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                         loading="lazy"
                     >
                     <button class="favorite-btn ${isFav ? 'active' : ''}" 

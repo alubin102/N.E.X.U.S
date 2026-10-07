@@ -1,6 +1,6 @@
 import HeroProvider from '../../services/HeroProvider.js';
 import Utils from '../../services/Utils.js';
-import imageLoader from '../../services/ImageLoader.js';
+import imageLoader, { getImageUrl } from '../../services/ImageLoader.js';
 
 class HeroDetail {
     constructor(heroId) {
@@ -61,7 +61,7 @@ class HeroDetail {
                 <div class="hero-detail-container">
                     <div class="hero-detail-image">
                         <img 
-                            src="${this.hero.image || 'https://via.placeholder.com/400x500?text=No+Image'}"
+                            src="${getImageUrl(this.hero.image) || 'https://via.placeholder.com/400x500?text=No+Image'}"
                             alt="${this.hero.name}"
                             class="hero-main-image"
                             loading="lazy"
