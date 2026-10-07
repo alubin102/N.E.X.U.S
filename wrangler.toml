@@ -2,5 +2,9 @@ name = "nexus"
 compatibility_date = "2024-04-01"
 
 [assets]
+directory = "dist"name = "nexus"
+compatibility_date = "2024-04-01"
+
+[assets]
 directory = "nexus-database/dist"
 binding = "ASSETS"
