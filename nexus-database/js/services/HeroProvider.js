@@ -11,7 +11,10 @@ export default class HeroProvider {
     static loadFromCache() {
         try {
             const data = localStorage.getItem('hero_cache');
-            const heroes = data ? JSON.parse(data) : null;
+            const cached = data ? JSON.parse(data) : null;
+            const heroes = cached?.version === CONFIG.api.cacheVersion
+                ? cached.heroes
+                : null;
             if (heroes && Array.isArray(heroes) && heroes.length > 0) {
                 const firstHero = heroes[0];
                 if (!firstHero.biography) {
@@ -28,7 +31,10 @@ export default class HeroProvider {
 
     static saveToCache(heroes) {
         try {
-            localStorage.setItem('hero_cache', JSON.stringify(heroes));
+            localStorage.setItem('hero_cache', JSON.stringify({
+                version: CONFIG.api.cacheVersion,
+                heroes
+            }));
         } catch (e) {
         }
     }
@@ -50,12 +56,15 @@ export default class HeroProvider {
     static async fetchAllApiHeroes() {
         const maxHeroId = CONFIG.api.maxHeroId || 731;
         const batchSize = CONFIG.api.requestBatchSize || 8;
+        const retries = CONFIG.api.requestRetries || 3;
         const heroes = [];
 
         for (let start = 1; start <= maxHeroId; start += batchSize) {
             const end = Math.min(start + batchSize - 1, maxHeroId);
             const ids = Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
-            const batch = await Promise.all(ids.map(id => HeroProvider.fetchHeroById(id)));
+            const batch = await Promise.all(
+                ids.map(id => HeroProvider.fetchHeroById(id, retries))
+            );
             batch.forEach(hero => {
                 if (hero) heroes.push(hero);
             });
@@ -64,15 +73,32 @@ export default class HeroProvider {
         return heroes;
     }
 
-    static async fetchHeroById(id) {
-        try {
-            const response = await fetch(`${HeroProvider.baseUrl}/${HeroProvider.apiKey}/${id}`);
-            if (!response.ok) return null;
+    static async fetchHeroById(id, retries = 0) {
+        for (let attempt = 0; attempt <= retries; attempt += 1) {
+            try {
+                const response = await fetch(`${HeroProvider.baseUrl}/${HeroProvider.apiKey}/${id}`);
+                if (response.ok) {
+                    const apiHero = await response.json();
+                    if (!apiHero || apiHero.response !== 'success') return null;
 
-            const apiHero = await response.json();
-            if (!apiHero || apiHero.response !== 'success') return null;
+                    return HeroProvider.normalizeHero(apiHero);
+                }
 
-            return {
+                if (response.status < 500 && response.status !== 429) return null;
+            } catch (error) {
+                if (attempt === retries) return null;
+            }
+
+            await new Promise(resolve => {
+                setTimeout(resolve, 250 * (attempt + 1));
+            });
+        }
+
+        return null;
+    }
+
+    static normalizeHero(apiHero) {
+        return {
                 id: parseInt(apiHero.id),
                 name: apiHero.name || 'Inconnu',
                 alias: apiHero.biography?.['full-name'] || apiHero.name || 'Inconnu',
@@ -113,9 +139,6 @@ export default class HeroProvider {
                 ratings: [],
                 averageRating: 0
             };
-        } catch (error) {
-            return null;
-        }
     }
 
     static toNumber(value) {
@@ -258,4 +281,3 @@ export default class HeroProvider {
     }
 
 }
-
