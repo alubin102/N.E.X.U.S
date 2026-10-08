@@ -100,8 +100,9 @@ function updateNavigation() {
         link.classList.remove('active');
         const href = link.getAttribute('href').substring(1);
 
-        if ((hash === '' || hash === '/') && href === '') {
-            link.classList.add('active');
+        if (href === '/') {
+            // L'accueil ne doit pas rester actif sur toutes les routes (elles commencent toutes par "/")
+            link.classList.toggle('active', hash === '/' || hash === '/home');
         } else if (hash.startsWith(href) && href !== '') {
             link.classList.add('active');
         }

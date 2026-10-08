@@ -241,6 +241,13 @@ const CSS = `
     0%   { opacity: 1; }
     100% { opacity: 0; pointer-events: none; }
 }
+
+@media (max-width: 480px) {
+    .nb-inner { gap: 1.4rem; }
+    .nb-title { font-size: 2.4rem; letter-spacing: 0.22em; }
+    .nb-subtitle { letter-spacing: 0.12em; }
+    .nb-status-row { gap: 1rem; }
+}
 `;
 
 function buildLoader() {

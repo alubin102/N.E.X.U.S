@@ -843,17 +843,25 @@ footer {
 
 @media (max-width: 1000px) {
     .header-inner {
-        grid-template-columns: 1fr;
-        align-items: start;
-        gap: 0.8rem;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas:
+            "brand search"
+            "nav nav";
+        gap: 0.7rem 1rem;
+    }
+
+    .brand-block {
+        grid-area: brand;
     }
 
     #main-nav {
+        grid-area: nav;
         justify-content: flex-start;
     }
 
     #search-container {
-        width: 100%;
+        grid-area: search;
+        justify-self: end;
     }
 
     .hero-detail-container {
@@ -861,7 +869,13 @@ footer {
     }
 
     .hero-detail-image {
+        width: 100%;
         max-width: 380px;
+        margin: 0 auto;
+    }
+
+    .hero-detail-content {
+        min-width: 0;
     }
 }
 
@@ -875,36 +889,22 @@ footer {
         align-items: flex-start;
     }
 
+    .filters,
     .filter-select {
         width: 100%;
         min-width: 0;
     }
-
-    .heroes-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 460px) {
-    #main-nav {
-        gap: 0.3rem;
-    }
-
-    #main-nav a {
-        font-size: 0.78rem;
-        padding: 0.38rem 0.65rem;
-    }
-
     .home-actions,
     .about-actions,
-    .error-actions,
-    .pagination {
+    .error-actions {
         flex-direction: column;
         align-items: stretch;
     }
 
     .btn,
-    .btn-page,
     .details-btn,
     .back-btn {
         width: 100%;
@@ -1187,5 +1187,255 @@ img.lazy-error {
     
     .hero-detail-content h1 {
         font-size: 1.6rem;
+    }
+}
+
+/* ── MOBILE ── */
+@media (max-width: 720px) {
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    /* En-tête compact : marque + recherche, puis onglets pleine largeur */
+    .header-inner {
+        padding: 0.6rem 0.75rem;
+        gap: 0.5rem 0.75rem;
+    }
+
+    .brand-block h1 {
+        font-size: 1.55rem;
+        letter-spacing: 0.16em;
+    }
+
+    #main-nav {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 0.3rem;
+    }
+
+    #main-nav a {
+        text-align: center;
+        white-space: nowrap;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        padding: 0.5rem 0.2rem;
+    }
+
+    /* 16px minimum : évite le zoom automatique d'iOS à la prise de focus */
+    #search-input,
+    .filter-select,
+    #rating-comment {
+        font-size: 16px;
+    }
+
+    #search-input {
+        height: 38px;
+        padding-left: 2rem;
+        background-position: 0.6rem center;
+    }
+
+    #search-input:placeholder-shown {
+        text-overflow: ellipsis;
+    }
+
+    main {
+        margin-top: 1rem;
+    }
+
+    .home-features,
+    .about-container,
+    .hero-detail,
+    .heroes-section,
+    .favorites-section,
+    .search-results {
+        padding: 0.85rem;
+    }
+
+    /* Accueil */
+    .home-hero {
+        padding: 1rem;
+    }
+
+    .home-hero h2 {
+        font-size: clamp(1rem, 5.4vw, 1.6rem);
+    }
+
+    .cursor {
+        width: 8px;
+        margin-left: 4px;
+    }
+
+    .tagline {
+        font-size: 0.84rem;
+    }
+
+    .sys-status {
+        gap: 0.3rem 0.9rem;
+        font-size: 0.66rem;
+        margin-bottom: 1rem;
+    }
+
+    .terminal-logs {
+        padding: 0.8rem;
+        margin: 1rem 0;
+        font-size: 0.74rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Cartes héros : deux par ligne au lieu d'une carte plein écran */
+    .heroes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.65rem;
+        margin-top: 0.9rem;
+    }
+
+    .hero-card {
+        clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    }
+
+    .hero-card-body,
+    .hero-card-content {
+        gap: 0.2rem;
+        padding: 0.6rem;
+        min-width: 0;
+    }
+
+    .hero-card-body h3,
+    .hero-name {
+        font-size: 1.02rem;
+        overflow-wrap: anywhere;
+    }
+
+    .hero-card .hero-alias,
+    .hero-card .hero-publisher,
+    .hero-card .rating-value {
+        font-size: 0.7rem;
+    }
+
+    .hero-card .hero-rating {
+        flex-wrap: wrap;
+        gap: 0.1rem 0.4rem;
+        margin: 0.1rem 0;
+    }
+
+    .hero-card .stars {
+        font-size: 0.8rem;
+    }
+
+    .hero-card .btn-small {
+        width: 100%;
+        min-height: 32px;
+        margin-top: auto;
+        padding: 0.3rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .hero-card .favorite-btn {
+        top: 0.4rem;
+        right: 0.4rem;
+    }
+
+    /* Pagination : indicateur de page au-dessus, boutons sur deux colonnes */
+    .pagination {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .pagination .page-info {
+        grid-column: 1 / -1;
+        order: -1;
+        margin-top: 0;
+        text-align: center;
+    }
+
+    .btn-page {
+        min-height: 40px;
+        padding: 0.36rem 0.4rem;
+    }
+
+    /* Fiche héros */
+    .back-link {
+        display: inline-block;
+        padding: 0.35rem 0;
+    }
+
+    .hero-detail-image {
+        max-width: 260px;
+    }
+
+    .favorite-btn.large {
+        min-height: 44px;
+    }
+
+    .hero-stats,
+    .rating-section,
+    .ratings-list,
+    .rating-form,
+    .info-section {
+        padding: 0.8rem;
+    }
+
+    .hero-info-sections {
+        gap: 0.8rem;
+        margin-top: 0.4rem;
+    }
+
+    .info-grid {
+        gap: 0.7rem;
+    }
+
+    .star-btn {
+        font-size: 1.9rem;
+        padding: 0.15rem 0.25rem;
+    }
+
+    .rating-item-header {
+        gap: 0.6rem;
+    }
+
+    .error-container {
+        padding: 1.4rem 1rem;
+    }
+
+    footer {
+        margin-top: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .heroes-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Écrans tactiles : pas d'état :hover qui reste collé après un appui */
+@media (hover: none) {
+    a,
+    button {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .hero-card:hover {
+        transform: none;
+        border-color: var(--line);
+        box-shadow: var(--shadow-card);
+    }
+
+    .favorite-btn:not(.active):hover {
+        transform: none;
+        border-color: rgba(180, 210, 160, 0.5);
+        color: var(--text-muted);
+        background-color: rgba(4, 9, 14, 0.72);
+    }
+
+    #main-nav a:not(.active):hover {
+        color: var(--text-muted);
+        border-color: transparent;
+        background-color: transparent;
+        box-shadow: none;
+        transform: none;
     }
 }
