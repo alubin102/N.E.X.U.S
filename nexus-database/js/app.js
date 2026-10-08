@@ -2,6 +2,7 @@ import HeroProvider from './services/HeroProvider.js';
 import Utils from './services/Utils.js';
 import CONFIG from './config.js';
 import imageLoader, { getImageUrl } from './services/ImageLoader.js';
+import { runLoader } from './loader.js';
 
 import Home from './views/pages/Home.js';
 import HeroesList from './views/pages/HeroesList.js';
@@ -256,10 +257,19 @@ async function router() {
 
 
 window.addEventListener('hashchange', router);
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
     initDomReferences();
     setupNavigation();
     setupSearch();
     attachCardNavigation();
-    router();
+
+    document.documentElement.style.overflow = 'hidden';
+    try {
+        await Promise.all([
+            runLoader(),
+            router()
+        ]);
+    } finally {
+        document.documentElement.style.overflow = '';
+    }
 });

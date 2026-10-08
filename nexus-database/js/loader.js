@@ -335,7 +335,7 @@ function runSequence(el, seqIdx, globalPctStart, resolve) {
     }, stepDelay);
 }
 
-function runLoader() {
+export function runLoader() {
     return new Promise(resolve => {
         const el = buildLoader();
         runSequence(el, 0, 0, () => {
@@ -427,9 +427,3 @@ export function showLoader(sequences = SEQUENCES, title = 'N.E.X.U.S.', duration
         nextStep(0, 0);
     });
 }
-
-document.documentElement.style.overflow = 'hidden';
-
-runLoader().then(() => {
-    document.documentElement.style.overflow = '';
-});
