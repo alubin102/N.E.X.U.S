@@ -6,63 +6,60 @@ export function getImageUrl(url) {
     return `/api/image?url=${encodeURIComponent(url)}`;
 }
 
+// Le téléchargement lui-même est laissé au navigateur (loading="lazy" : seules les
+// images proches de l'écran sont demandées). Ce service ne fait que suivre l'état de
+// chaque <img> pour appliquer les classes d'animation et l'image de secours, sans
+// jamais demander une image une seconde fois.
 class ImageLoader {
     constructor(options = {}) {
         this.options = {
-            rootMargin: options.rootMargin || '50px',
-            threshold: options.threshold || 0.01,
             placeholderColor: options.placeholderColor || '#f0f0f0',
             ...options
         };
 
-        this.imageMap = new WeakMap();
-        this.initObserver();
-    }
-
-    initObserver() {
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    this.loadImage(entry.target);
-                }
-            });
-        }, {
-            rootMargin: this.options.rootMargin,
-            threshold: this.options.threshold
-        });
+        this.tracked = new WeakSet();
     }
 
     loadImage(img) {
-        const originalSrc = img.dataset.src || img.getAttribute('data-src');
+        if (this.tracked.has(img)) return;
+        this.tracked.add(img);
+
+        const src = getImageUrl(img.dataset.src || img.getAttribute('data-src'));
         const srcset = img.dataset.srcset || img.getAttribute('data-srcset');
 
-        if (!originalSrc) {
-            this.observer.unobserve(img);
+        if (!img.getAttribute('src')) {
+            if (!src) return;
+            img.src = src;
+        }
+        if (srcset) {
+            img.srcset = srcset;
+        }
+
+        if (img.complete && img.naturalWidth > 0) {
+            this.markLoaded(img);
             return;
         }
 
-        const src = getImageUrl(originalSrc);
         img.classList.add('lazy-loading');
 
-        const tempImg = new Image();
-
-        tempImg.onload = () => {
-            img.src = src;
-            if (srcset) {
-                img.srcset = srcset;
-            }
-            img.classList.remove('lazy-loading');
-            img.classList.add('lazy-loaded');
-            this.observer.unobserve(img);
-            img.dispatchEvent(new Event('lazyloaded'));
+        const onLoad = () => {
+            img.removeEventListener('error', onError);
+            this.markLoaded(img);
         };
-
-        tempImg.onerror = () => {
+        const onError = () => {
+            img.removeEventListener('load', onLoad);
             this.setFallbackImage(img);
-            this.observer.unobserve(img);
             img.dispatchEvent(new Event('lazyloaderror'));
         };
-        tempImg.src = src;
+
+        img.addEventListener('load', onLoad, { once: true });
+        img.addEventListener('error', onError, { once: true });
+    }
+
+    markLoaded(img) {
+        img.classList.remove('lazy-loading');
+        img.classList.add('lazy-loaded');
+        img.dispatchEvent(new Event('lazyloaded'));
     }
 
     setFallbackImage(img) {
@@ -76,7 +73,7 @@ class ImageLoader {
 
     observe(img) {
         if (img.classList.contains('lazy-load') || img.dataset.src) {
-            this.observer.observe(img);
+            this.loadImage(img);
         }
     }
 
@@ -86,18 +83,14 @@ class ImageLoader {
     }
 
     unobserve(img) {
-        this.observer.unobserve(img);
+        this.tracked.delete(img);
     }
 
     disconnect() {
-        this.observer.disconnect();
+        this.tracked = new WeakSet();
     }
 
     reload() {
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        this.initObserver();
         this.observeAll();
     }
 }

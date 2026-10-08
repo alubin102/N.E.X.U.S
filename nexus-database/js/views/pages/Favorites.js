@@ -17,13 +17,6 @@ class Favorites {
                     </div>
                 </section>
             `;
-            setTimeout(() => {
-                const appElement = document.getElementById('app');
-                if (!appElement) return;
-                appElement.innerHTML = html;
-                this.attachFavoriteListeners();
-                this.initLazyLoading();
-            }, 0);
             return html;
         }
 
@@ -45,6 +38,7 @@ class Favorites {
                             class="lazy-load"
                             data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             loading="lazy"
+                            decoding="async"
                         >
                         <button class="favorite-btn active" 
                                 data-hero-id="${hero.id}"
@@ -72,14 +66,14 @@ class Favorites {
 
         html += '</div></section>';
 
-        setTimeout(() => {
-            const appElement = document.getElementById('app');
-            if (!appElement) return;
-            appElement.innerHTML = html;
-            this.attachFavoriteListeners();
-        }, 0);
-
         return html;
+    }
+
+    // Appelé par le routeur une fois le HTML inséré dans la page
+    afterRender() {
+        if (!document.getElementById('app')) return;
+        this.attachFavoriteListeners();
+        this.initLazyLoading();
     }
 
     renderStars(rating) {

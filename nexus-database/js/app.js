@@ -26,7 +26,12 @@ const routes = {
 let appElement = null;
 let searchInput = null;
 let mainNav = null;
-let dataLoaded = false;
+let dataLoadingPromise = null;
+let navigationId = 0;
+let searchObserver = null;
+
+// Nombre de cartes ajoutées à la fois dans les résultats de recherche
+const SEARCH_CHUNK_SIZE = 24;
 
 function initDomReferences() {
     if (appElement) return;
@@ -49,21 +54,36 @@ function attachCardNavigation() {
         if (!heroId) return;
 
 
-        window.location.hash = `#/hero/${heroId}`;
-        setTimeout(router, 50);
+        // Un seul rendu : le changement de hash déclenche déjà le routeur.
+        // Si le hash est identique (carte ouverte depuis la recherche), on le relance à la main.
+        const target = `#/hero/${heroId}`;
+        if (window.location.hash === target) {
+            router();
+        } else {
+            window.location.hash = target;
+        }
     });
 }
 
-async function ensureDataLoaded() {
-    if (dataLoaded) return;
+function ensureDataLoaded() {
+    if (!dataLoadingPromise) {
+        dataLoadingPromise = (async () => {
+            console.log(` ${CONFIG.app.name} v${CONFIG.app.version}`);
 
-    console.log(` ${CONFIG.app.name} v${CONFIG.app.version}`);
+            const heroes = await HeroProvider.loadHeroes();
+            HeroProvider.loadRatings();
 
-    const heroes = await HeroProvider.loadHeroes();
-    HeroProvider.loadRatings();
-    dataLoaded = true;
+            console.log(` ${heroes.length} super-héros chargés`);
+        })();
+    }
+    return dataLoadingPromise;
+}
 
-    console.log(` ${heroes.length} super-héros chargés`);
+function stopSearchObserver() {
+    if (searchObserver) {
+        searchObserver.disconnect();
+        searchObserver = null;
+    }
 }
 
 
@@ -103,6 +123,9 @@ function setupNavigation() {
 
 
 function performSearch(query) {
+    navigationId += 1;
+    stopSearchObserver();
+
     const results = HeroProvider.searchHeroes(query);
 
     if (!results || results.length === 0) {
@@ -121,23 +144,11 @@ function performSearch(query) {
     displaySearchResults(results, query);
 }
 
-function displaySearchResults(results, query) {
-    if (!appElement) return;
+function renderSearchCard(hero) {
+    const isFav = HeroProvider.isFavorite(hero.id);
+    const avgRating = hero.averageRating || 0;
 
-    let html = `
-        <section class="search-results">
-            <div class="search-header">
-                <h2>Résultats pour "${Utils.escapeHtml(query)}"</h2>
-                <p>${results.length} super-héro${results.length > 1 ? 's' : ''} trouvé${results.length > 1 ? 's' : ''}</p>
-            </div>
-            <div class="heroes-grid">
-    `;
-
-    results.forEach(hero => {
-        const isFav = HeroProvider.isFavorite(hero.id);
-        const avgRating = hero.averageRating || 0;
-
-        html += `
+    return `
             <article class="hero-card" data-hero-id="${hero.id}">
                 <div class="hero-card-image">
                     <img 
@@ -146,6 +157,7 @@ function displaySearchResults(results, query) {
                         class="lazy-load"
                         data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                         loading="lazy"
+                        decoding="async"
                     >
                     <button class="favorite-btn ${isFav ? 'active' : ''}" 
                             data-hero-id="${hero.id}"
@@ -165,24 +177,67 @@ function displaySearchResults(results, query) {
                 </div>
             </article>
         `;
-    });
-
-    html += '</div></section>';
-    appElement.innerHTML = html;
-
-    // Initialiser le lazy loading pour les images de recherche
-    if ('IntersectionObserver' in window) {
-        imageLoader.reload();
-        imageLoader.observeAll(appElement);
-    }
-
-    attachSearchListeners();
 }
 
-function attachSearchListeners() {
+function displaySearchResults(results, query) {
     if (!appElement) return;
 
-    appElement.querySelectorAll('.favorite-btn').forEach(btn => {
+    // Sans IntersectionObserver, tout est rendu d'un coup comme avant
+    const chunkSize = 'IntersectionObserver' in window ? SEARCH_CHUNK_SIZE : results.length;
+
+    appElement.innerHTML = `
+        <section class="search-results">
+            <div class="search-header">
+                <h2>Résultats pour "${Utils.escapeHtml(query)}"</h2>
+                <p>${results.length} super-héro${results.length > 1 ? 's' : ''} trouvé${results.length > 1 ? 's' : ''}</p>
+            </div>
+            <div class="heroes-grid"></div>
+        </section>
+    `;
+
+    const grid = appElement.querySelector('.heroes-grid');
+    let rendered = 0;
+
+    // Ajoute le lot suivant de cartes : seules les cartes proches de l'écran existent dans le DOM
+    const appendNextChunk = () => {
+        const template = document.createElement('template');
+        template.innerHTML = results
+            .slice(rendered, rendered + chunkSize)
+            .map(renderSearchCard)
+            .join('');
+        rendered += chunkSize;
+
+        attachSearchListeners(template.content);
+        const images = Array.from(template.content.querySelectorAll('img'));
+        grid.appendChild(template.content);
+        images.forEach(img => imageLoader.observe(img));
+    };
+
+    appendNextChunk();
+    if (rendered >= results.length) return;
+
+    const sentinel = document.createElement('div');
+    sentinel.setAttribute('aria-hidden', 'true');
+    grid.after(sentinel);
+
+    searchObserver = new IntersectionObserver((entries, observer) => {
+        if (!entries.some(entry => entry.isIntersecting)) return;
+
+        appendNextChunk();
+        if (rendered >= results.length) {
+            observer.disconnect();
+            sentinel.remove();
+            return;
+        }
+        // Ré-observe pour enchaîner tant que la fin de la grille reste proche de l'écran
+        observer.unobserve(sentinel);
+        observer.observe(sentinel);
+    }, { rootMargin: '1000px 0px' });
+    searchObserver.observe(sentinel);
+}
+
+function attachSearchListeners(container) {
+    container.querySelectorAll('.favorite-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             const heroId = parseInt(btn.dataset.heroId, 10);
@@ -216,10 +271,9 @@ function setupSearch() {
 
 async function router() {
     initDomReferences();
-    await ensureDataLoaded();
-
     if (!appElement) return;
 
+    const currentNavigation = ++navigationId;
     const request = Utils.parseRequestURL();
 
 
@@ -234,6 +288,11 @@ async function router() {
 
     const PageClass = routes[routeKey] || Error404;
 
+    // L'accueil et la page 404 n'utilisent pas les données : inutile de les attendre
+    if (PageClass !== Home && PageClass !== Error404) {
+        await ensureDataLoaded();
+    }
+
     let pageInstance;
     if (PageClass === HeroesList) {
         const pageNum = request.id || 1;
@@ -246,18 +305,27 @@ async function router() {
         pageInstance = new PageClass();
     }
 
+    const html = await pageInstance.render();
+
+    // Une navigation plus récente a démarré entre-temps : on n'écrase pas son affichage
+    if (currentNavigation !== navigationId) return;
+
+    stopSearchObserver();
     updateNavigation();
     if (searchInput) {
         searchInput.value = '';
     }
 
-    appElement.innerHTML = await pageInstance.render();
+    // Un seul passage dans le DOM par navigation, puis branchement des événements
+    appElement.innerHTML = html;
+    if (typeof pageInstance.afterRender === 'function') {
+        pageInstance.afterRender();
+    }
 }
 
 
 
-window.addEventListener('hashchange', router);
-window.addEventListener('load', async () => {
+async function start() {
     initDomReferences();
     setupNavigation();
     setupSearch();
@@ -272,4 +340,14 @@ window.addEventListener('load', async () => {
     } finally {
         document.documentElement.style.overflow = '';
     }
-});
+}
+
+// Les données sont demandées dès l'exécution du script, en parallèle du reste
+ensureDataLoaded();
+
+window.addEventListener('hashchange', router);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+} else {
+    start();
+}

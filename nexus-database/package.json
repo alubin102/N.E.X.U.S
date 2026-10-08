@@ -5,7 +5,8 @@
   "main": "js/app.js",
   "scripts": {
     "start": "webpack serve --mode development",
-    "build": "webpack --mode production && cp index.html dist/ && cp -r assets dist/",
+    "build": "webpack --mode production && node scripts/postbuild.mjs",
+    "fetch-heroes": "node scripts/fetch-heroes.mjs",
     "dev": "webpack --mode development",
     "watch": "webpack --mode development --watch"
   },
