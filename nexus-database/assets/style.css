@@ -417,6 +417,23 @@ section {
     box-shadow: 0 0 0 1px var(--accent), var(--shadow-lift), var(--glow);
 }
 
+.hero-card-image {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--bg-card);
+}
+
+.hero-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
 .hero-card-body,
 .hero-card-content {
     display: flex;
