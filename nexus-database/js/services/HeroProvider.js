@@ -74,31 +74,39 @@ export default class HeroProvider {
         const maxHeroId = CONFIG.api.maxHeroId || 731;
         const batchSize = CONFIG.api.requestBatchSize || 8;
         const retries = CONFIG.api.requestRetries || 3;
-        const heroes = [];
+        const heroes = new Array(maxHeroId);
+        let nextId = 1;
 
-        for (let start = 1; start <= maxHeroId; start += batchSize) {
-            const end = Math.min(start + batchSize - 1, maxHeroId);
-            const ids = Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
-            const batch = await Promise.all(
-                ids.map(id => HeroProvider.fetchHeroById(id, retries))
-            );
-            batch.forEach(hero => {
-                if (hero) heroes.push(hero);
-            });
-            if (end < maxHeroId) {
-                await new Promise(resolve => {
-                    setTimeout(resolve, CONFIG.api.requestDelay || 300);
-                });
+        const fetchNextHeroes = async () => {
+            while (nextId <= maxHeroId) {
+                const id = nextId;
+                nextId += 1;
+                heroes[id - 1] = await HeroProvider.fetchHeroById(id, retries);
             }
-        }
+        };
 
-        return heroes;
+        const workers = Array.from(
+            { length: Math.min(batchSize, maxHeroId) },
+            () => fetchNextHeroes()
+        );
+        await Promise.all(workers);
+
+        return heroes.filter(Boolean);
     }
 
     static async fetchHeroById(id, retries = 0) {
         for (let attempt = 0; attempt <= retries; attempt += 1) {
+            const controller = new AbortController();
+            const timeout = setTimeout(
+                () => controller.abort(),
+                CONFIG.api.requestTimeout || 10000
+            );
+
             try {
-                const response = await fetch(`${HeroProvider.baseUrl}/${HeroProvider.apiKey}/${id}`);
+                const response = await fetch(
+                    `${HeroProvider.baseUrl}/${HeroProvider.apiKey}/${id}`,
+                    { signal: controller.signal }
+                );
                 if (response.ok) {
                     const apiHero = await response.json();
                     if (apiHero?.response === 'success') {
@@ -113,10 +121,12 @@ export default class HeroProvider {
                 }
             } catch (error) {
                 if (attempt === retries) return null;
+            } finally {
+                clearTimeout(timeout);
             }
 
             await new Promise(resolve => {
-                setTimeout(resolve, 250 * (attempt + 1));
+                setTimeout(resolve, (CONFIG.api.retryDelay || 300) * (attempt + 1));
             });
         }
 
