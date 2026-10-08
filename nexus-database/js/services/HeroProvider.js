@@ -1,4 +1,5 @@
 import CONFIG from '../config.js';
+import heroesSnapshotUrl from '../../data/heroes.json';
 
 export default class HeroProvider {
     static apiKey = CONFIG.api.apiKey;
@@ -8,6 +9,9 @@ export default class HeroProvider {
     static favoritesKey = 'hero_favorites';
     static favorites = HeroProvider.loadFavorites();
     static loadingPromise = null;
+    static heroIndex = new Map();
+    static indexedHeroes = null;
+    static indexedLength = 0;
 
     static loadFromCache() {
         try {
@@ -57,7 +61,10 @@ export default class HeroProvider {
         let apiHeroes = HeroProvider.loadFromCache();
 
         if (apiHeroes === null) {
-            apiHeroes = await HeroProvider.fetchAllApiHeroes();
+            apiHeroes = await HeroProvider.fetchSnapshotHeroes();
+            if (apiHeroes === null) {
+                apiHeroes = await HeroProvider.fetchAllApiHeroes();
+            }
             const expectedHeroCount = CONFIG.api.maxHeroId || 731;
             if (apiHeroes && apiHeroes.length >= expectedHeroCount * 0.9) {
                 HeroProvider.saveToCache(apiHeroes);
@@ -68,6 +75,25 @@ export default class HeroProvider {
 
         HeroProvider.heroes = apiHeroes || [];
         return HeroProvider.heroes;
+    }
+
+    // Instantané statique (une seule requête, mise en cache par le CDN) ;
+    // null si indisponible, auquel cas on retombe sur l'API héros par héros.
+    static async fetchSnapshotHeroes() {
+        try {
+            const response = await fetch(heroesSnapshotUrl);
+            if (!response.ok) return null;
+
+            const apiHeroes = await response.json();
+            if (!Array.isArray(apiHeroes)) return null;
+
+            const heroes = apiHeroes
+                .filter(apiHero => apiHero?.response === 'success')
+                .map(apiHero => HeroProvider.normalizeHero(apiHero));
+            return heroes.length > 0 ? heroes : null;
+        } catch (error) {
+            return null;
+        }
     }
 
     static async fetchAllApiHeroes() {
@@ -187,7 +213,18 @@ export default class HeroProvider {
     }
 
     static getHeroById(id) {
-        return HeroProvider.heroes.find(hero => hero.id === parseInt(id)) || null;
+        const heroes = HeroProvider.heroes;
+        // Index reconstruit seulement si la liste a été remplacée ou complétée
+        if (HeroProvider.indexedHeroes !== heroes || HeroProvider.indexedLength !== heroes.length) {
+            const index = new Map();
+            heroes.forEach(hero => {
+                if (!index.has(hero.id)) index.set(hero.id, hero);
+            });
+            HeroProvider.heroIndex = index;
+            HeroProvider.indexedHeroes = heroes;
+            HeroProvider.indexedLength = heroes.length;
+        }
+        return HeroProvider.heroIndex.get(parseInt(id)) || null;
     }
 
     static searchHeroes(query) {

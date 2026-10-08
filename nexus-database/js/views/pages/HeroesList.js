@@ -51,27 +51,6 @@ class HeroesList {
                     </div>
                 </section>
             `;
-            setTimeout(() => {
-                const appElement = document.getElementById('app');
-                if (!appElement) return;
-                appElement.innerHTML = html;
-
-                const publisherFilter = appElement.querySelector('#publisher-filter');
-                if (publisherFilter) {
-                    publisherFilter.addEventListener('change', (e) => {
-                        const selectedPublisher = e.target.value;
-                        if (selectedPublisher) {
-                            window.location.hash = `#/heroes/1?publisher=${encodeURIComponent(selectedPublisher)}`;
-                        } else {
-                            window.location.hash = '#/heroes/1';
-                        }
-                    });
-                }
-
-                this.attachFavoriteListeners();
-                this.initLazyLoading();
-            }, 0);
-
             return html;
         }
 
@@ -109,6 +88,7 @@ class HeroesList {
                             class="lazy-load"
                             data-src="${getImageUrl(hero.image) || 'https://via.placeholder.com/300x400?text=No+Image'}"
                             loading="lazy"
+                            decoding="async"
                         >
                         <button class="favorite-btn ${isFav ? 'active' : ''}" 
                                 data-hero-id="${hero.id}"
@@ -154,28 +134,28 @@ class HeroesList {
         }
 
         html += '</section>';
-        setTimeout(() => {
-            const appElement = document.getElementById('app');
-            if (!appElement) return;
-            appElement.innerHTML = html;
-
-            const publisherFilter = appElement.querySelector('#publisher-filter');
-            if (publisherFilter) {
-                publisherFilter.addEventListener('change', (e) => {
-                    const selectedPublisher = e.target.value;
-                    if (selectedPublisher) {
-                        window.location.hash = `#/heroes/1?publisher=${encodeURIComponent(selectedPublisher)}`;
-                    } else {
-                        window.location.hash = '#/heroes/1';
-                    }
-                });
-            }
-
-            this.attachFavoriteListeners();
-            this.initLazyLoading();
-        }, 0);
-
         return html;
+    }
+
+    // Appelé par le routeur une fois le HTML inséré dans la page
+    afterRender() {
+        const appElement = document.getElementById('app');
+        if (!appElement) return;
+
+        const publisherFilter = appElement.querySelector('#publisher-filter');
+        if (publisherFilter) {
+            publisherFilter.addEventListener('change', (e) => {
+                const selectedPublisher = e.target.value;
+                if (selectedPublisher) {
+                    window.location.hash = `#/heroes/1?publisher=${encodeURIComponent(selectedPublisher)}`;
+                } else {
+                    window.location.hash = '#/heroes/1';
+                }
+            });
+        }
+
+        this.attachFavoriteListeners();
+        this.initLazyLoading();
     }
 
     renderStars(rating) {

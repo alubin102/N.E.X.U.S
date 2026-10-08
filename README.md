@@ -17,6 +17,7 @@ Visite `http://localhost:8080`
 - `npm run build` - Compilation production (minifiée)
 - `npm run dev` - Compilation développement
 - `npm run watch` - Watch mode
+- `npm run fetch-heroes` - Régénère `data/heroes.json` (instantané de l'API chargé en une seule requête), à relancer puis rebuilder si les données de l'API changent
 
 ## Routes
 

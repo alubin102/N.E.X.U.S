@@ -35,11 +35,6 @@ class HeroDetail {
                     Super-héro non trouvé
                 </div>
             `;
-            setTimeout(() => {
-                const appElement = document.getElementById('app');
-                if (!appElement) return;
-                appElement.innerHTML = html;
-            }, 0);
             return html;
         }
 
@@ -65,6 +60,7 @@ class HeroDetail {
                             alt="${this.hero.name}"
                             class="hero-main-image"
                             loading="lazy"
+                            decoding="async"
                         >
                         <button class="favorite-btn large ${isFav ? 'active' : ''}" 
                                 data-hero-id="${this.hero.id}">
@@ -145,68 +141,68 @@ class HeroDetail {
             </section>
         `;
 
-        setTimeout(() => {
-            const appElement = document.getElementById('app');
-            if (!appElement) return;
-            appElement.innerHTML = html;
+        return html;
+    }
 
-            const favBtn = appElement.querySelector('.favorite-btn');
-            if (favBtn) {
-                favBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const isFav = HeroProvider.toggleFavorite(this.hero);
-                    favBtn.classList.toggle('active');
-                    favBtn.textContent = isFav ? '♥ Retiré des favoris' : '♥ Ajouter aux favoris';
-                });
-            }
+    // Appelé par le routeur une fois le HTML inséré dans la page
+    afterRender() {
+        const appElement = document.getElementById('app');
+        if (!appElement || !this.hero) return;
 
-            let selectedRating = 0;
-            const starBtns = appElement.querySelectorAll('.star-btn');
-            const selectedRatingDisplay = appElement.querySelector('#selected-rating');
+        const favBtn = appElement.querySelector('.favorite-btn');
+        if (favBtn) {
+            favBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isFav = HeroProvider.toggleFavorite(this.hero);
+                favBtn.classList.toggle('active');
+                favBtn.textContent = isFav ? '♥ Retiré des favoris' : '♥ Ajouter aux favoris';
+            });
+        }
 
-            starBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    selectedRating = parseInt(btn.dataset.value);
-                    if (selectedRatingDisplay) {
-                        selectedRatingDisplay.textContent = `${selectedRating}/5 sélectionné`;
-                    }
-                    starBtns.forEach((b, idx) => {
-                        b.classList.toggle('active', idx < selectedRating);
-                    });
+        let selectedRating = 0;
+        const starBtns = appElement.querySelectorAll('.star-btn');
+        const selectedRatingDisplay = appElement.querySelector('#selected-rating');
+
+        starBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                selectedRating = parseInt(btn.dataset.value);
+                if (selectedRatingDisplay) {
+                    selectedRatingDisplay.textContent = `${selectedRating}/5 sélectionné`;
+                }
+                starBtns.forEach((b, idx) => {
+                    b.classList.toggle('active', idx < selectedRating);
                 });
             });
+        });
 
-            const submitBtn = appElement.querySelector('#submit-rating');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (selectedRating === 0) {
-                        alert('Veuillez sélectionner une note');
-                        return;
-                    }
+        const submitBtn = appElement.querySelector('#submit-rating');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (selectedRating === 0) {
+                    alert('Veuillez sélectionner une note');
+                    return;
+                }
 
-                    const commentElement = appElement.querySelector('#rating-comment');
-                    const comment = commentElement ? commentElement.value : '';
-                    HeroProvider.addRating(this.hero.id, selectedRating, comment);
-                    
-                    alert('Merci pour votre avis ! Recharger la page pour voir les changements.');
-                    window.location.hash = `#/hero/${this.hero.id}`;
-                });
-            }
+                const commentElement = appElement.querySelector('#rating-comment');
+                const comment = commentElement ? commentElement.value : '';
+                HeroProvider.addRating(this.hero.id, selectedRating, comment);
+                
+                alert('Merci pour votre avis ! Recharger la page pour voir les changements.');
+                window.location.hash = `#/hero/${this.hero.id}`;
+            });
+        }
 
-            const backLink = appElement.querySelector('.back-link');
-            if (backLink) {
-                backLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.location.hash = '#/heroes';
-                });
-            }
+        const backLink = appElement.querySelector('.back-link');
+        if (backLink) {
+            backLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.hash = '#/heroes';
+            });
+        }
 
-            this.initLazyLoading();
-        }, 0);
-
-        return html;
+        this.initLazyLoading();
     }
 
     renderStats(stats) {
